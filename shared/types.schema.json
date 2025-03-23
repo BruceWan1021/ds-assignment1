@@ -1,0 +1,33 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "TeamMember": {
+        "type": "object",
+        "required": ["teamId", "playerId", "name", "position", "description"],
+        "properties": {
+          "teamId": {
+            "type": "string"
+          },
+          "playerId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "position": {
+            "type": "string"
+          },
+          "isCaptain": {
+            "type": "boolean"
+          },
+          "age": {
+            "type": "number"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+}
