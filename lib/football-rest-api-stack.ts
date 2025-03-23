@@ -55,6 +55,22 @@ export class FootballRestApiStack extends cdk.Stack {
         },
       }
     );
+
+    const getTeamByIdFn = new lambdanode.NodejsFunction(
+      this,
+      "GetTeamByIdFunction",
+      {
+        architecture: lambda.Architecture.ARM_64,
+        runtime: lambda.Runtime.NODEJS_18_X,
+        entry: `${__dirname}/../lambdas/getTeamById.ts`,
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 128,
+        environment: {
+          TABLE_NAME: teamsTable.tableName,
+          REGION: 'eu-west-1',
+        },
+      }
+    );
         
       new custom.AwsCustomResource(this, "teamsddbInitData", {
         onCreate: {
@@ -77,6 +93,7 @@ export class FootballRestApiStack extends cdk.Stack {
         // Permissions 
         teamsTable.grantWriteData(addTeamFn)
         teamsTable.grantReadData(getAllTeamsFn)
+        teamsTable.grantReadData(getTeamByIdFn)
 
         const api = new apig.RestApi(this, "RestAPI", {
           description: "demo api",
@@ -99,6 +116,12 @@ export class FootballRestApiStack extends cdk.Stack {
         teamsEndpoint.addMethod(
           "GET",
           new apig.LambdaIntegration(getAllTeamsFn, { proxy: true })
+        );
+
+        const teamByIdEndpoint = teamsEndpoint.addResource("{teamId}").addResource("{playerId}")
+        teamByIdEndpoint.addMethod(
+          "GET",
+          new apig.LambdaIntegration(getTeamByIdFn)
         );
       }
     }
