@@ -104,6 +104,23 @@ export class FootballRestApiStack extends cdk.Stack {
       }
     );
 
+    const getTeamTranslationFn = new lambdanode.NodejsFunction(
+      this,
+      "GetTeamTranslationFunction",
+      {
+        architecture: lambda.Architecture.ARM_64,
+        runtime: lambda.Runtime.NODEJS_18_X,
+        entry: `${__dirname}/../lambdas/getTeamTranslation.ts`,
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 128,
+        environment: {
+          TABLE_NAME: teamsTable.tableName,
+          REGION: 'eu-west-1',
+        },
+      }
+    );
+
+
         
       new custom.AwsCustomResource(this, "teamsddbInitData", {
         onCreate: {
@@ -129,6 +146,7 @@ export class FootballRestApiStack extends cdk.Stack {
         teamsTable.grantReadData(getTeamByIdFn)
         teamsTable.grantReadWriteData(updateTeamMemberFn)
         teamsTable.grantReadData(getTeamsByQueryFn)
+        teamsTable.grantReadWriteData(getTeamTranslationFn)
 
         const api = new apig.RestApi(this, "RestAPI", {
           description: "demo api",
@@ -142,6 +160,13 @@ export class FootballRestApiStack extends cdk.Stack {
             allowOrigins: ["*"],
           },
         });
+
+        getTeamTranslationFn.addToRolePolicy(
+          new iam.PolicyStatement({
+            actions: ["translate:TranslateText"],
+            resources: ["*"],
+          })
+        );
     
         const teamsEndpoint = api.root.addResource("teams");
         teamsEndpoint.addMethod(
@@ -167,6 +192,12 @@ export class FootballRestApiStack extends cdk.Stack {
         queryEndpoint.addMethod(
           "GET",
           new apig.LambdaIntegration(getTeamsByQueryFn)
+        );
+
+        const translationEndpoint = teamByIdEndpoint.addResource("translation")
+        translationEndpoint.addMethod(
+          "GET",
+          new apig.LambdaIntegration(getTeamTranslationFn)
         );
       }
     }

@@ -6,7 +6,8 @@ export const teams = [
       position: "Forward",
       isCaptain: true,
       age: 36,
-      description: "A legendary player known for his dribbling and vision."
+      description: "A legendary player known for his dribbling and vision.",
+      translation:[]
     },
     {
       teamId: "team001",
@@ -15,7 +16,8 @@ export const teams = [
       position: "Midfielder",
       isCaptain: false,
       age: 29,
-      description: "A hard-working midfielder with strong tactical sense."
+      description: "A hard-working midfielder with strong tactical sense.",
+      translation:[]
     },
     {
       teamId: "team002",
@@ -25,6 +27,7 @@ export const teams = [
       isCaptain: true,
       age: 25,
       description: "A fast and clinical striker from France.",
+      translation:[]
     },
     {
       teamId: "team002",
@@ -33,7 +36,8 @@ export const teams = [
       position: "Midfielder",
       isCaptain: false,
       age: 24,
-      description: "A young and promising holding midfielder."
+      description: "A young and promising holding midfielder.",
+      translation:[]
     }
   ];
   
