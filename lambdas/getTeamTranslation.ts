@@ -1,7 +1,7 @@
 import { APIGatewayProxyHandlerV2 } from "aws-lambda";
 import { TranslateClient, TranslateTextCommand } from "@aws-sdk/client-translate";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, GetCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, GetCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 
 const REGION = process.env.REGION || "eu-west-1";
 const TABLE_NAME = process.env.TABLE_NAME || "";
@@ -39,9 +39,16 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
 
     const fieldsToTranslate = ["name", "description"];
     const translated: Record<string, string> = {};
+    const newTranslations: any[] = [];
 
     for (const field of fieldsToTranslate) {
-      if (Item[field]) {
+        const existing = Item.translation?.find(
+            (t: any) => t.languageCode === languageCode && t.field === field
+        );
+
+        if (existing) {
+            translated[field] = existing.text;
+          } else if (Item[field]) {
         const command = new TranslateTextCommand({
           SourceLanguageCode: "en",
           TargetLanguageCode: languageCode,
@@ -50,18 +57,40 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
 
         const { TranslatedText } = await translateClient.send(command);
         translated[field] = TranslatedText || "";
+        newTranslations.push({
+            languageCode,
+            field,
+            text: TranslatedText || "",
+        });
       }
     }
 
-    return {
-      statusCode: 200,
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        teamId,
-        playerId,
-        translations: translated,
-      }),
-    };
+    if (newTranslations.length > 0) {
+        await ddbDocClient.send(
+          new UpdateCommand({
+            TableName: TABLE_NAME,
+            Key: { teamId, playerId },
+            UpdateExpression: "SET #t = list_append(if_not_exists(#t, :empty), :new)",
+            ExpressionAttributeNames: {
+              "#t": "translation",
+            },
+            ExpressionAttributeValues: {
+              ":new": newTranslations,
+              ":empty": [],
+            },
+          })
+        );
+      }
+      
+      return {
+        statusCode: 200,
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          teamId,
+          playerId,
+          translations: translated,
+        }),
+      };
   } catch (error: any) {
     console.error("[ERROR]", error);
     return {
