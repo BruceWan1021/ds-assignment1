@@ -161,6 +161,18 @@ export class FootballRestApiStack extends cdk.Stack {
           },
         });
 
+        const apiKey = api.addApiKey("TeamApiKey", {
+          apiKeyName: "TeamManagementKey",
+          description: "Required for POST and PUT methods"
+        });
+
+        const usagePlan = api.addUsagePlan("TimeApiUsagePlan", {
+          name: "TEamAPIUsage",
+          apiStages: [{ api, stage: api.deploymentStage}]
+        });
+
+        usagePlan.addApiKey(apiKey);
+
         getTeamTranslationFn.addToRolePolicy(
           new iam.PolicyStatement({
             actions: ["translate:TranslateText"],
@@ -171,7 +183,8 @@ export class FootballRestApiStack extends cdk.Stack {
         const teamsEndpoint = api.root.addResource("teams");
         teamsEndpoint.addMethod(
           "POST",
-          new apig.LambdaIntegration(addTeamFn, { proxy: true })
+          new apig.LambdaIntegration(addTeamFn, { proxy: true }),
+          { apiKeyRequired: true }
         );
         teamsEndpoint.addMethod(
           "GET",
@@ -185,7 +198,8 @@ export class FootballRestApiStack extends cdk.Stack {
         );
         teamByIdEndpoint.addMethod(
           "PUT",
-          new apig.LambdaIntegration(updateTeamMemberFn)
+          new apig.LambdaIntegration(updateTeamMemberFn),
+          { apiKeyRequired: true }
         );
 
         const queryEndpoint = teamsEndpoint.addResource("search")
@@ -199,6 +213,7 @@ export class FootballRestApiStack extends cdk.Stack {
           "GET",
           new apig.LambdaIntegration(getTeamTranslationFn)
         );
+        
       }
     }
     
