@@ -28,6 +28,22 @@
           }
         },
         "additionalProperties": false
-      }
+      },
+      "TeamQueryParams": {
+        "type": "object",
+        "properties": {
+            "teamId": { 
+                "type": "string" 
+            },
+            "name": { 
+                "type": "string" 
+            },
+            "position": { 
+                "type": "string" 
+            }
+        },
+        "additionalProperties": false
     }
+    }
+    
 }
