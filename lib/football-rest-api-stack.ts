@@ -38,7 +38,23 @@ export class FootballRestApiStack extends cdk.Stack {
           REGION: 'eu-west-1',
         },
       }
-      );
+    );
+
+    const getAllTeamsFn = new lambdanode.NodejsFunction(
+      this,
+      "GetAllTeamsFunction",
+      {
+        architecture: lambda.Architecture.ARM_64,
+        runtime: lambda.Runtime.NODEJS_18_X,
+        entry: `${__dirname}/../lambdas/getAllTeams.ts`,
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 128,
+        environment: {
+          TABLE_NAME: teamsTable.tableName,
+          REGION: 'eu-west-1',
+        },
+      }
+    );
         
       new custom.AwsCustomResource(this, "teamsddbInitData", {
         onCreate: {
@@ -60,6 +76,7 @@ export class FootballRestApiStack extends cdk.Stack {
         
         // Permissions 
         teamsTable.grantWriteData(addTeamFn)
+        teamsTable.grantReadData(getAllTeamsFn)
 
         const api = new apig.RestApi(this, "RestAPI", {
           description: "demo api",
@@ -78,6 +95,10 @@ export class FootballRestApiStack extends cdk.Stack {
         teamsEndpoint.addMethod(
           "POST",
           new apig.LambdaIntegration(addTeamFn, { proxy: true })
+        );
+        teamsEndpoint.addMethod(
+          "GET",
+          new apig.LambdaIntegration(getAllTeamsFn, { proxy: true })
         );
       }
     }
